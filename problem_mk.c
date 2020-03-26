@@ -3,6 +3,7 @@
 #include <assert.h>
 
 #include "problem_mk.h"
+#include "problem_as.h"
 
 unsigned char exec_binop(enum opcode_t opc, unsigned char rd, unsigned char rs) {
 
