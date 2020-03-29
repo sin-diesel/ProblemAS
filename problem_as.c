@@ -9,61 +9,6 @@
 
 extern const int MAX_LEN = 20;
 
-
-char *strrev(char *str) { // str reverse function
-    char *p1, *p2;
-
-    if (! str || ! *str)
-        return str;
-    for (p1 = str, p2 = str + strlen(str) - 1; p2 > p1; ++p1, --p2)
-    {
-        *p1 ^= *p2;
-        *p2 ^= *p1;
-        *p1 ^= *p2;
-    }
-    return str;
-}
-
-
-int get_bin_comm(char* command) { // conversion of binary num in string representation to int representation
-
-    unsigned char res = 0;
-
-    strrev(command);
-
-    int temp = atoi(command);
-    int len = strlen(command);
-
-    for (int i = 0; i < len; ++i) {
-
-        int remainder = temp % 10;
-        res += remainder;
-        if (i < len - 1) {
-            res = res << 1;
-        }
-        temp = temp / 10;
-    }
-
-
-    return res;
-}
-
-char * int_to_bin(int i)
-{
-    size_t bits = sizeof(int);
-
-    char * str = malloc(bits + 1);
-    if (!str) return NULL;
-    str[bits] = 0;
-
-    // type punning because signed shift is implementation-defined
-    unsigned u = *(unsigned *)&i;
-    for(; bits--; u >>= 1)
-        str[bits] = u & 1 ? '1' : '0';
-
-    return str;
-}
-
 struct in_data_t get_data(int argc, char **argv) { // acquiring data
 
     assert(argc > 0);
@@ -78,7 +23,7 @@ struct in_data_t get_data(int argc, char **argv) { // acquiring data
 
         if (strcmp(argv[1], "-d") == 0) {
             data->dec_type = DECODER;
-            data->data_type.cmd.cmd_bin = get_bin_comm(argv[2]);
+            data->data_type.cmd.cmd_bin = *argv[2];
         }
 
         else if (strcmp(argv[1], "-c") == 0) {
@@ -153,111 +98,46 @@ void exec_command_dec(struct instr_t instr, FILE* stream) { // executing single 
 
     struct reg_state_t regs[RLAST] = {0};
 
-    char* reg1 = (char*) calloc(5, sizeof(char));
-    char* reg2 = (char*) calloc(5, sizeof(char));
-    char* reg3 = (char*) calloc(5, sizeof(char));
+    char reg1 = 0;
+    char reg2 = 0;
+    char reg3 = 0;
 
-    switch(instr.opnd.ops.rs) { // determining which regs to write
-        case A: {
-            strcpy(reg1, "A");
-            break;
-        }
-
-        case B: {
-            strcpy(reg1, "B");
-            break;
-        }
-
-        case C: {
-            strcpy(reg1, "C");
-            break;
-        }
-
-        case D: {
-            strcpy(reg1, "D");
-            break;
-        }
-
-    }
-
-    switch(instr.opnd.ops.rd) { // determining which regs to write
-        case A: {
-            strcpy(reg2, "A");
-            break;
-        }
-
-        case B: {
-            strcpy(reg2, "B");
-            break;
-        }
-
-        case C: {
-            strcpy(reg2, "C");
-            break;
-        }
-
-        case D: {
-            strcpy(reg2, "D");
-            break;
-        }
-
-    }
-
-    switch(instr.opnd.rop) { // determining which regs to write
-        case A: {
-            strcpy(reg3, "A");
-            break;
-        }
-
-        case B: {
-            strcpy(reg3, "B");
-            break;
-        }
-
-        case C: {
-            strcpy(reg3, "C");
-            break;
-        }
-
-        case D: {
-            strcpy(reg3, "D");
-            break;
-        }
-
-    }
+    reg1 = instr.opnd.ops.rs + 'A';
+    reg2 = instr.opnd.ops.rd + 'A';
+    reg3 = instr.opnd.rop + 'A';
 
     switch (instr.opcode) {
 
         case MOVI: {
-            fprintf(stream, "MOVI D, %d\n", instr.opnd.imm);
+            fprintf(stream, "MOVI %d\n", instr.opnd.imm);
             break;
         }
 
         case ADD: {
-            fprintf(stream, "ADD R%s, R%s\n", reg1, reg2);
+            fprintf(stream, "ADD %c, %c\n", reg1, reg2);
             break;
         }
 
         case SUB: {
-            fprintf(stream, "SUB R%s, R%s\n", reg1, reg2);
+            fprintf(stream, "SUB %c, %c\n", reg1, reg2);
             break;
         }
         case MUL: {
-            fprintf(stream, "MUL R%s, R%s\n", reg1, reg2);
+            fprintf(stream, "MUL %c, %c\n", reg1, reg2);
             break;
         }
         case DIV: {
-            fprintf(stream, "DIV R%s, R%s\n", reg1, reg2);
+            fprintf(stream, "DIV %c, %c\n", reg1, reg2);
             break;
         }
 
         case IN: {
-            fprintf(stream, "IN R%s\n", reg3);
+            fprintf(stream, "IN %c\n", reg3);
             break;
         }
 
         case OUT: {
-            fprintf(stream, "OUT R%s\n", reg3);
+            fprintf(stream, "OUT %c\n", reg3);
             break;
         }
 
@@ -266,58 +146,116 @@ void exec_command_dec(struct instr_t instr, FILE* stream) { // executing single 
             abort();
         }
     }
-    //execute_instr(regs, &instr);
+
+    return;
+}
+
+void exec_command_dec_wregs(struct instr_t instr, FILE* stream, struct reg_state_t* regs) { // executing single command (instr)
+
+
+    char reg1 = 0;
+    char reg2 = 0;
+    char reg3 = 0;
+
+    reg1 = instr.opnd.ops.rs + 'A';
+    reg2 = instr.opnd.ops.rd + 'A';
+    reg3 = instr.opnd.rop + 'A';
+
+    switch (instr.opcode) {
+
+        case MOVI: {
+            fprintf(stream, "MOVI %d\n", instr.opnd.imm);
+            break;
+        }
+
+        case ADD: {
+            //regs[instr.opnd.ops.rd].init = 1;
+            fprintf(stream, "ADD %c, %c\n", reg1, reg2);
+            break;
+        }
+
+        case SUB: {
+            //regs[instr.opnd.ops.rd].init = 1;
+            fprintf(stream, "SUB %c, %c\n", reg1, reg2);
+            break;
+        }
+        case MUL: {
+            //regs[instr.opnd.ops.rd].init = 1;
+            fprintf(stream, "MUL %c, %c\n", reg1, reg2);
+            break;
+        }
+        case DIV: {
+            //regs[instr.opnd.ops.rd].init = 1;
+            fprintf(stream, "DIV %c, %c\n", reg1, reg2);
+            break;
+        }
+
+        case IN: {
+            regs[instr.opnd.rop].init = 1;
+            fprintf(stream, "IN %c\n", reg3);
+            break;
+        }
+
+        case OUT: {
+            //regs[instr.opnd.rop].init = 1;
+            fprintf(stream, "OUT %c\n", reg3);
+            break;
+        }
+
+        default: {
+            fprintf(stderr, "Decoding opcode error, aborting\n");
+            abort();
+        }
+    }
 
     return;
 }
 
 void exec_command_enc(struct instr_t instr, FILE* stream) {
 
+    unsigned res = 0;
+
     switch(instr.opcode) {
 
         case MOVI: {
-            fprintf(stream, "%04d", MOVE_COM);
-            fprintf(stream, "%s ", int_to_bin(instr.opnd.imm));
+            res = MOVE_CODE | instr.opnd.imm;
+            fprintf(stream, "0x%x ", res);
             break;
         }
 
         case ADD: {
-            fprintf(stream, "%d", ADD_COM);
-            fprintf(stream, "%s", (int_to_bin(instr.opnd.ops.rd) + 2));
-            fprintf(stream, "%s ", (int_to_bin(instr.opnd.ops.rs) + 2));
+            res = ADD_CODE | (instr.opnd.ops.rd << 2) | (instr.opnd.ops.rs);
+            fprintf(stream, "0x%x ", res);
             break;
         }
 
         case SUB: {
-            fprintf(stream, "%d", SUB_COM);
-            fprintf(stream, "%s", (int_to_bin(instr.opnd.ops.rd) + 2));
-            fprintf(stream, "%s ", (int_to_bin(instr.opnd.ops.rs) + 2));
+            res = SUB_CODE | (instr.opnd.ops.rd << 2) | (instr.opnd.ops.rs);
+            fprintf(stream, "0x%x ", res);
             break;
         }
 
         case MUL: {
-            fprintf(stream, "%d", MUL_COM);
-            fprintf(stream, "%s", (int_to_bin(instr.opnd.ops.rd) + 2));
-            fprintf(stream, "%s ", (int_to_bin(instr.opnd.ops.rs) + 2));
+            res = MUL_CODE | (instr.opnd.ops.rd << 2) | (instr.opnd.ops.rs);
+            fprintf(stream, "0x%x ", res);
             break;
         }
 
         case DIV: {
-            fprintf(stream, "%d", DIV_COM);
-            fprintf(stream, "%s", (int_to_bin(instr.opnd.ops.rd) + 2));
-            fprintf(stream, "%s ", (int_to_bin(instr.opnd.ops.rs) + 2));
+            res = DIV_CODE | (instr.opnd.ops.rd << 2) | (instr.opnd.ops.rs);
+            fprintf(stream, "0x%x ", res);
             break;
         }
 
         case IN: {
-            fprintf(stream, "%d", IN_COM);
-            fprintf(stream, "%s ", int_to_bin(instr.opnd.rop) + 2);
+            res = IN_CODE | instr.opnd.rop;
+            fprintf(stream, "0x%x ", res);
             break;
         }
 
         case OUT: {
-            fprintf(stream, "%d", OUT_COM);
-            fprintf(stream, "%s ", int_to_bin(instr.opnd.rop) + 2);
+            res = OUT_CODE | instr.opnd.rop;
+            fprintf(stream, "0x%x ", res);
             break;
         }
 
@@ -331,21 +269,44 @@ void exec_command_enc(struct instr_t instr, FILE* stream) {
 
 }
 
+
+
 void exec_file_dec(struct in_data_t data) {
 
-    char* command = (char*) calloc(MAX_LEN, sizeof(char));
+    unsigned cmd = 0;
 
-    while (fscanf(data.data_type.files.in_file, "%s", command) == 1) {
+    while (fscanf(data.data_type.files.in_file, "%x", &cmd) == 1) {
 
         struct instr_t instr = {0};
-
-        int res = get_bin_comm(command);
-
-        unsigned char cmd = res & COMMANDMASK;
-        assert(cmd == res);
+        unsigned char command = cmd & COMMANDMASK;
+        assert(cmd == command);
         instr = decode_instr(cmd);
         exec_command_dec(instr, data.data_type.files.out_file);
     }
+
+    return;
+}
+
+void get_arith(int cmd_type, struct instr_t* instr, char const *beginning, char* p) {
+
+    instr->opcode = cmd_type;
+    p++;
+    beginning = p;
+    p++;
+    *p = '\0';
+
+    int reg = *beginning - 'A';
+    instr->opnd.ops.rd = reg;
+
+    p += ARITH_SHIFT;
+    p++;
+    beginning = p;
+    p++;
+    *p = '\0';
+
+    reg = *beginning - 'A';
+
+    instr->opnd.ops.rs = reg;
 
     return;
 }
@@ -358,11 +319,6 @@ struct instr_t decode_instr_asm(char* cmd_asm) {
     assert(instr);
 
     int cmd_len = strlen(cmd_asm);
-
-    //cmd_asm[cmd_len - 2] = '\0';//removing " " symbols from cmd
-    //cmd_asm[0] = '\0';
-    //cmd_asm++;
-
     char* beginning = cmd_asm;
     char* p = cmd_asm;
 
@@ -376,191 +332,39 @@ struct instr_t decode_instr_asm(char* cmd_asm) {
         p += MOVE_SHIFT;
         instr->opnd.imm = atoi(p);
     }
-    else if (strcmp(beginning, "ADD") == 0) {
-        instr->opcode = ADD;
-        p += 2;
-        beginning = p;
-        p++;
-        *p = '\0';
-        if (strcmp(beginning, "A") == 0) {
-            instr->opnd.ops.rd = A;
-        }
-        if (strcmp(beginning, "B") == 0) {
-            instr->opnd.ops.rd = B;
-        }
-        if (strcmp(beginning, "C") == 0) {
-            instr->opnd.ops.rd = C;
-        }
-        if (strcmp(beginning, "D") == 0) {
-            instr->opnd.ops.rd = D;
-        }
-
-        p += ADD_SHIFT;
-        beginning = p;
-        p++;
-        *p = '\0';
-
-        if (strcmp(beginning, "A") == 0) {
-            instr->opnd.ops.rs = A;
-        }
-        if (strcmp(beginning, "B") == 0) {
-            instr->opnd.ops.rs = B;
-        }
-        if (strcmp(beginning, "C") == 0) {
-            instr->opnd.ops.rs = C;
-        }
-        if (strcmp(beginning, "D") == 0) {
-            instr->opnd.ops.rs = D;
-        }
+    else if (strcmp(beginning, "ADD") == 0) { //get_arith()
+      get_arith(ADD, instr, beginning, p);
     }
     else if (strcmp(beginning, "SUB") == 0) {
-        instr->opcode = SUB;
-        p += 2;
-        beginning = p;
-        p++;
-        *p = '\0';
-        if (strcmp(beginning, "A") == 0) {
-            instr->opnd.ops.rd = A;
-        }
-        if (strcmp(beginning, "B") == 0) {
-            instr->opnd.ops.rd = B;
-        }
-        if (strcmp(beginning, "C") == 0) {
-            instr->opnd.ops.rd = C;
-        }
-        if (strcmp(beginning, "D") == 0) {
-            instr->opnd.ops.rd = D;
-        }
-
-        p += SUB_SHIFT;
-        beginning = p;
-        p++;
-        *p = '\0';
-
-        if (strcmp(beginning, "A") == 0) {
-            instr->opnd.ops.rs = A;
-        }
-        if (strcmp(beginning, "B") == 0) {
-            instr->opnd.ops.rs = B;
-        }
-        if (strcmp(beginning, "C") == 0) {
-            instr->opnd.ops.rs = C;
-        }
-        if (strcmp(beginning, "D") == 0) {
-            instr->opnd.ops.rs = D;
-        }
+        get_arith(SUB, instr, beginning, p);
     }
 
     if (strcmp(beginning, "MUL") == 0) {
-        instr->opcode = MUL;
-        p += 2;
-        beginning = p;
-        p++;
-        *p = '\0';
-        if (strcmp(beginning, "A") == 0) {
-            instr->opnd.ops.rd = A;
-        }
-        if (strcmp(beginning, "B") == 0) {
-            instr->opnd.ops.rd = B;
-        }
-        if (strcmp(beginning, "C") == 0) {
-            instr->opnd.ops.rd = C;
-        }
-        if (strcmp(beginning, "D") == 0) {
-            instr->opnd.ops.rd = D;
-        }
-
-        p += MUL_SHIFT;
-        beginning = p;
-        p++;
-        *p = '\0';
-
-        if (strcmp(beginning, "A") == 0) {
-            instr->opnd.ops.rs = A;
-        }
-        if (strcmp(beginning, "B") == 0) {
-            instr->opnd.ops.rs = B;
-        }
-        if (strcmp(beginning, "C") == 0) {
-            instr->opnd.ops.rs = C;
-        }
-        if (strcmp(beginning, "D") == 0) {
-            instr->opnd.ops.rs = D;
-        }
+        get_arith(MUL, instr, beginning, p);
     }
 
     if (strcmp(beginning, "DIV") == 0) {
-        instr->opcode = DIV;
-        p += 2;
-        beginning = p;
-        p++;
-        *p = '\0';
-        if (strcmp(beginning, "A") == 0) {
-            instr->opnd.ops.rd = A;
-        }
-        if (strcmp(beginning, "B") == 0) {
-            instr->opnd.ops.rd = B;
-        }
-        if (strcmp(beginning, "C") == 0) {
-            instr->opnd.ops.rd = C;
-        }
-        if (strcmp(beginning, "D") == 0) {
-            instr->opnd.ops.rd = D;
-        }
-
-        p += DIV_SHIFT;
-        beginning = p;
-        p++;
-        *p = '\0';
-
-        if (strcmp(beginning, "A") == 0) {
-            instr->opnd.ops.rs = A;
-        }
-        if (strcmp(beginning, "B") == 0) {
-            instr->opnd.ops.rs = B;
-        }
-        if (strcmp(beginning, "C") == 0) {
-            instr->opnd.ops.rs = C;
-        }
-        if (strcmp(beginning, "D") == 0) {
-            instr->opnd.ops.rs = D;
-        }
+        get_arith(DIV, instr, beginning, p);
     }
 
     if (strcmp(beginning, "IN") == 0) {
         instr->opcode = IN;
         p += IN_SHIFT;
         beginning = p;
-        if (strcmp(beginning, "A") == 0) {
-            instr->opnd.rop = A;
-        }
-        if (strcmp(beginning, "B") == 0) {
-            instr->opnd.rop = B;
-        }
-        if (strcmp(beginning, "C") == 0) {
-            instr->opnd.rop = C;
-        }
-        if (strcmp(beginning, "D") == 0) {
-            instr->opnd.rop = D;
-        }
+
+        int reg = *beginning - 'A';
+
+        instr->opnd.rop = reg;
     }
 
     if (strcmp(beginning, "OUT") == 0) {
         instr->opcode = OUT;
         p += OUT_SHIFT;
         beginning = p;
-        if (strcmp(beginning, "A") == 0) {
-            instr->opnd.rop = A;
-        }
-        if (strcmp(beginning, "B") == 0) {
-            instr->opnd.rop = B;
-        }
-        if (strcmp(beginning, "C") == 0) {
-            instr->opnd.rop = C;
-        }
-        if (strcmp(beginning, "D") == 0) {
-            instr->opnd.rop = D;
-        }
+
+        int reg = *beginning - 'A';
+
+        instr->opnd.rop = reg;
     }
 
     return *instr;
@@ -571,12 +375,20 @@ void exec_file_enc(struct in_data_t data) {
     char* command = (char*) calloc(MAX_LEN, sizeof(char));
     assert(command);
 
+
+
     while (fgets(command, MAX_LEN, data.data_type.files.in_file) != NULL) {
 
-        command[strlen(command) - 1] = '\0';
+        int len = strlen(command);
+
+        command[len - 1] = '\0';
+        command[len - 2] = '\0'; // ONLY TO SKIP /r
         struct instr_t instr = decode_instr_asm(command);
         exec_command_enc(instr, data.data_type.files.out_file);
 
     }
 
+    free(command);
+
 }
+

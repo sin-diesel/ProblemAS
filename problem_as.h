@@ -8,17 +8,24 @@
 
 extern const int MAX_LEN;
 
-enum {
-    MOVE_SHIFT = 4,
-    ADD_SHIFT = 3,
-    SUB_SHIFT = 3,
-    MUL_SHIFT = 3,
-    DIV_SHIFT = 3,
-    IN_SHIFT = 3,
-    OUT_SHIFT = 2,
+enum cmd_codes_t {
+    MOVE_CODE = (0 << 7),
+    ADD_CODE = (1 << 7),
+    SUB_CODE = 0x90,
+    MUL_CODE = 0xA0,
+    DIV_CODE = 0xB0,
+    IN_CODE = 0xC0,
+    OUT_CODE = 0xC4
 };
 
-enum {
+enum shifts_t {
+    MOVE_SHIFT = 1,
+    ARITH_SHIFT = 1,
+    IN_SHIFT = 1,
+    OUT_SHIFT = 1,
+};
+
+enum cmd_bin_t {
     MOVE_COM = 0,
     ADD_COM = 1000,
     SUB_COM = 1001,
@@ -28,7 +35,7 @@ enum {
     OUT_COM = 110001,
 };
 
-enum {
+enum data_types_t {
     DECODER = 1,
     ENCODER = 2,
     COMMAND = 11,
@@ -36,7 +43,7 @@ enum {
 };
 
 union cmd_t {
-    int cmd_bin;
+    unsigned cmd_bin;
     char* cmd_asm;
 };
 
@@ -58,14 +65,6 @@ struct in_data_t {
 
 
 
-char *strrev(char *str); // str reverse function
-
-
-int get_bin_comm(char* command); // conversion of binary num in string representation to int representation
-
-
-char * int_to_bin(int i);
-
 struct in_data_t get_data(int argc, char **argv);
 
 void exec_command_dec(struct instr_t instr, FILE* stream); // executing single command (instr)
@@ -77,3 +76,10 @@ struct instr_t decode_instr_asm(char* cmd_asm);
 void exec_file_enc(struct in_data_t data);
 
 void exec_file_dec(struct in_data_t data);
+
+void get_arith(int cmd_type, struct instr_t* instr, char const *beginning, char* p);
+
+void exec_command_dec_wregs(struct instr_t instr, FILE* stream, struct reg_state_t* regs);
+
+
+void free_all();
